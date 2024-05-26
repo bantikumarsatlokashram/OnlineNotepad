@@ -111,6 +111,7 @@ body.dark-mode {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
+  justify-content: center; /* Center buttons horizontally */
 }
 
 .toolbar button {
