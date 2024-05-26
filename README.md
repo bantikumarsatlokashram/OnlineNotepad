@@ -1,6 +1,7 @@
 # Online Notepad by BKPKVIDEO
 Online best notepad for todays era
 
+![Preview of the tool ](https://www.bkpkvideo.com/wp-content/uploads/2024/05/thumbnail.png)
 
 Online Notepad by BKPKVIDEO is a feature-rich, web-based text editor designed for ease of use and functionality. It allows users to write, edit, and save text with a variety of tools and customization options. This project is fully responsive, ensuring a seamless experience on both desktop and mobile devices.
 
