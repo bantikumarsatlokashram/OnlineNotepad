@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Online Notepad by BKPKVIDEO</title>
+  <meta name="description" content="Online Notepad by BKPKVIDEO - A convenient tool for writing, editing, and saving text online.">
+  <meta name="keywords" content="notepad, online notepad, text editor, BKPKVIDEO, write, edit, save">
+  <meta name="author" content="BKPKVIDEO">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Open+Sans|Lato|Montserrat|Source+Sans+Pro|Raleway|Noto+Sans|Roboto+Mono|Merriweather|PT+Serif|Ubuntu|Nunito|Oswald|Merriweather+Sans|Khand|Mukta|Teko|Rajdhani|Hind|Kalam&display=swap">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="header">
+    <a href="https://bkpkvideo.com" class="logo">
+      <img src="bkpkvideo.svg" alt="BKPK VIDEO Logo">
+    </a>
+    <h1>Online Notepad by BKPKVIDEO</h1>
+    <div class="export-buttons">
+      <div class="dropdown">
+        <button class="dropbtn"><i class="fas fa-download"></i></button>
+        <div class="dropdown-content">
+          <a href="#" onclick="showDownloadPopup('text')"><i class="fas fa-file-alt"></i> .txt</a>
+          <a href="#" onclick="showDownloadPopup('pdf')"><i class="fas fa-file-pdf"></i> .pdf</a>
+          <a href="#" onclick="showDownloadPopup('css')"><i class="fas fa-code"></i> .css</a>
+          <a href="#" onclick="showDownloadPopup('html')"><i class="fas fa-file-code"></i> .html</a>
+          <a href="#" onclick="showDownloadPopup('javascript')"><i class="fas fa-file-code"></i> .js</a>
+          <a href="#" onclick="showDownloadPopup('php')"><i class="fas fa-code"></i> .php</a>
+          <a href="#" onclick="showDownloadPopup('word')"><i class="fas fa-file-word"></i> .docx</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="tool-buttons">
+      <button onclick="cutText()" title="Cut"><i class="fas fa-cut"></i><span class="button-label">Cut</span></button>
+      <button onclick="copyText()" title="Copy"><i class="fas fa-copy"></i><span class="button-label">Copy</span></button>
+      <button onclick="pasteText()" title="Paste"><i class="fas fa-paste"></i><span class="button-label">Paste</span></button>
+      <button onclick="showReplacePopup()" title="Replace"><i class="fas fa-exchange-alt"></i><span class="button-label">Replace</span></button>
+      <button onclick="selectAllText()" title="Select All"><i class="fas fa-select"></i><span class="button-label">Select All</span></button>
+      <button onclick="deleteAllText()" title="Delete All"><i class="fas fa-trash-alt"></i><span class="button-label">Delete All</span></button>
+      <button onclick="printText()" title="Print"><i class="fas fa-print"></i><span class="button-label">Print</span></button>
+      <div class="dropdown">
+        <button onclick="toggleShareMenu()" class="dropbtn" title="Share"><i class="fas fa-share-alt"></i><span class="button-label">Share</span></button>
+        <div id="shareMenu" class="dropdown-content">
+          <a href="#" onclick="shareText('facebook')"><i class="fab fa-facebook"></i> Facebook</a>
+          <a href="#" onclick="shareText('email')"><i class="fas fa-envelope"></i> Email</a>
+          <a href="#" onclick="shareText('whatsapp')"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+          <a href="#" onclick="shareText('twitter')"><i class="fab fa-twitter"></i> Twitter</a>
+          <a href="#" onclick="shareText('linkedin')"><i class="fab fa-linkedin"></i> LinkedIn</a>
+        </div>
+      </div>
+      <button onclick="zoomIn()" title="Zoom In"><i class="fas fa-search-plus"></i><span class="button-label">Zoom In</span></button>
+      <button onclick="zoomOut()" title="Zoom Out"><i class="fas fa-search-minus"></i><span class="button-label">Zoom Out</span></button>
+      <button onclick="undoText()" title="Undo"><i class="fas fa-undo"></i><span class="button-label">Undo</span></button>
+      <button onclick="redoText()" title="Redo"><i class="fas fa-redo"></i><span class="button-label">Redo</span></button>
+      <button onclick="toggleDarkMode()" id="darkModeBtn" title="Dark Mode" class="dark-mode-btn"><i class="fas fa-adjust"></i><span class="button-label">Dark Mode</span></button>
+      <button onclick="showPreferences()" id="preferencesBtn" title="Preferences"><i class="fas fa-cog"></i><span class="button-label">Preferences</span></button>
+    </div>
+  </div>
+  <div class="notepad-container">
+    <textarea id="notepad" placeholder="Start typing..."></textarea>
+  </div>
+  <div class="footer">
+    <span>© Designed by BKPKVIDEO.com</span>
+    <button id="scrollToTopBtn" onclick="scrollToTop()">Scroll to Top</button>
+  </div>
+
+  <div id="preferencesModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closePreferences()">&times;</span>
+      <h2>Preferences</h2>
+      <div class="preferences-group">
+        <label><input type="checkbox" id="textLinesToggle"> Text Lines</label>
+        <label><input type="checkbox" id="autoSaveToggle" checked> Auto Save</label>
+      </div>
+      <div class="preferences-group">
+        <label for="fontSizeSelect">Font Size:</label>
+        <select id="fontSizeSelect">
+          <option value="12px">12px</option>
+          <option value="14px">14px</option>
+          <option value="16px">16px</option>
+          <option value="18px">18px</option>
+          <option value="20px">20px</option>
+          <option value="24px">24px</option>
+          <option value="28px">28px</option>
+          <option value="32px">32px</option>
+        </select>
+      </div>
+      <div class="preferences-group">
+        <label for="fontFamilySelect">Font Family:</label>
+        <select id="fontFamilySelect">
+          <option value="Roboto">Roboto</option>
+          <option value="Open Sans">Open Sans</option>
+          <option value="Lato">Lato</option>
+          <option value="Montserrat">Montserrat</option>
+          <option value="Source Sans Pro">Source Sans Pro</option>
+          <option value="Raleway">Raleway</option>
+          <option value="Noto Sans">Noto Sans</option>
+          <option value="Roboto Mono">Roboto Mono</option>
+          <option value="Merriweather">Merriweather</option>
+          <option value="PT Serif">PT Serif</option>
+          <option value="Ubuntu">Ubuntu</option>
+          <option value="Nunito">Nunito</option>
+          <option value="Oswald">Oswald</option>
+          <option value="Merriweather Sans">Merriweather Sans</option>
+          <option value="Khand">Khand</option>
+          <option value="Mukta">Mukta</option>
+          <option value="Teko">Teko</option>
+          <option value="Rajdhani">Rajdhani</option>
+          <option value="Hind">Hind</option>
+          <option value="Kalam">Kalam</option>
+        </select>
+      </div>
+      <div class="preferences-group">
+        <label for="fontWeightSelect">Font Weight:</label>
+        <select id="fontWeightSelect">
+          <option value="normal">Normal</option>
+          <option value="bold">Bold</option>
+          <option value="lighter">Lighter</option>
+          <option value="bolder">Bolder</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="downloadModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeDownloadPopup()">&times;</span>
+      <h2>Download File</h2>
+      <div class="download-group">
+        <label for="fileName">File Name:</label>
+        <input type="text" id="fileName" value="notepad">
+      </div>
+      <div class="download-group">
+        <label for="fileFormat">File Format:</label>
+        <select id="fileFormat" class="animated-select">
+          <option value="text">.txt</option>
+          <option value="pdf">.pdf</option>
+          <option value="css">.css</option>
+          <option value="html">.html</option>
+          <option value="javascript">.js</option>
+          <option value="php">.php</option>
+          <option value="word">.docx</option>
+        </select>
+      </div>
+      <button onclick="downloadFile()">Download</button>
+    </div>
+  </div>
+
+  <div id="replaceModal" class="modal">
+    <div class="modal-content replace-modal-content">
+      <span class="close" onclick="closeReplacePopup()">&times;</span>
+      <h2>Replace Text</h2>
+      <div class="replace-group">
+        <label for="replaceText">Replace with:</label>
+        <input type="text" id="replaceText">
+      </div>
+      <button onclick="replaceText()">Replace</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
