@@ -307,7 +307,9 @@ notepad.addEventListener('input', function() {
 });
 
 // Initialize pages on load
-initPages();
+document.addEventListener('DOMContentLoaded', function() {
+  initPages();
+});
 
 const body = document.body;
 const preferencesModal = document.getElementById('preferencesModal');
