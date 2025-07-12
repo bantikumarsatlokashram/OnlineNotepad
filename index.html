@@ -7,7 +7,7 @@
   <meta name="description" content="Online Notepad by BKPKVIDEO - A convenient tool for writing, editing, and saving text online. Notepad online for text editing. Free notepad app, no login required">
   <meta name="keywords" content="notepad, online notepad, text editor, BKPKVIDEO, write, edit, save, best digital notebook, best digital notepad, remarkable notepad, remarkable digital notepad, digital paper notebook, note pad electronic, notepad online free, digital notepad remarkable, free note taking website, huawei notepad, free online notebook, to do note pad, windows notepad, digital writing notepad, shared notepad, pdf to text pdf, make text to pdf, colornote for iphone, one notepad, advanced notepad, best notepad for mac, digital notepad online, encrypted notepad, free online note book, live notepad, notepad aesthetic, notepad cost, notepad for windows 11, notes taking website free, online notebook for free, online notepad login, shareable notepad, text to pdf converter free, text to word pdf, type text to pdf online free">
   <meta name="author" content="BKPKVIDEO">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Open+Sans|Lato|Montserrat|Source+Sans+Pro|Raleway|Noto+Sans|Roboto+Mono|Merriweather|PT+Serif|Ubuntu|Nunito|Oswald|Merriweather+Sans|Khand|Mukta|Teko|Rajdhani|Hind|Kalam&display=swap">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
@@ -515,8 +515,10 @@ body.dark-mode .toolbar button::after {
     </div>
   </div>
   <div class="notepad-container" style="display: flex; flex-direction: column; align-items: flex-start;">
-    <div id="pages" class="pages-section"></div>
-    <textarea id="notepad" placeholder="Start typing..." style="flex: 1;"></textarea>
+    <div class="pages-section" id="pages">
+      <!-- Page tabs will be dynamically inserted here -->
+    </div>
+    <textarea id="notepad" placeholder="Start typing..." spellcheck="false"></textarea>
   </div>
   <div class="footer">
     <span> Designed by BKPKVIDEO.com</span>
@@ -643,6 +645,6 @@ body.dark-mode .toolbar button::after {
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
