@@ -39,6 +39,432 @@
     }
 }
 </script>
+<style>
+.pages-section {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  margin-bottom: 10px;
+  margin-top: 0;
+  align-items: center;
+  width: 100%;
+  overflow-x: auto;
+  background-color: #f5f5f5;
+  padding: 5px;
+}
+body.dark-mode .pages-section {
+  background-color: #333;
+}
+.page-btn {
+  padding: 6px 24px 6px 12px;
+  border: 1px solid #aaa;
+  background: #e0e0e0;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  outline: none;
+  font-size: 0.9rem;
+  margin: 0;
+  min-width: 80px;
+  max-width: 150px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+body.dark-mode .page-btn {
+  background: #444;
+  border-color: #666;
+  color: #fff;
+}
+.page-btn.active {
+  background: #007bff;
+  color: #fff;
+  font-weight: bold;
+  border-color: #007bff;
+  border-bottom-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+body.dark-mode .page-btn.active {
+  background: #4da6ff;
+  border-color: #4da6ff;
+}
+.page-btn .close-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.page-btn .close-icon:hover {
+  color: #ff0000;
+}
+body.dark-mode .page-btn .close-icon {
+  color: #aaa;
+}
+body.dark-mode .page-btn .close-icon:hover {
+  color: #ff5555;
+}
+.page-add-btn {
+  padding: 6px 10px;
+  border: 1px solid #aaa;
+  background: #e0e0e0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  outline: none;
+  font-size: 0.9rem;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.dark-mode .page-add-btn {
+  background: #444;
+  border-color: #666;
+  color: #fff;
+}
+.page-add-btn:hover {
+  background: #d0d0d0;
+}
+body.dark-mode .page-add-btn:hover {
+  background: #555;
+}
+
+/* Context Menu Styles for Rename Page */
+.context-menu {
+  display: none;
+  position: absolute;
+  z-index: 1000;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  padding: 10px;
+  min-width: 200px;
+  max-width: 300px;
+}
+body.dark-mode .context-menu {
+  background-color: #424242;
+  border-color: #666;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.context-menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rename-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rename-group label {
+  font-size: 0.9rem;
+}
+body.dark-mode .rename-group label {
+  color: #fff;
+}
+.rename-group input {
+  padding: 6px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+}
+body.dark-mode .rename-group input {
+  background-color: #333;
+  border-color: #666;
+  color: #fff;
+}
+.context-done-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  background-color: #007bff;
+  color: #fff;
+  transition: background 0.2s;
+  align-self: flex-end;
+}
+body.dark-mode .context-done-btn {
+  background-color: #4da6ff;
+}
+.context-done-btn:hover {
+  background-color: #0069d9;
+}
+body.dark-mode .context-done-btn:hover {
+  background-color: #3d8fd9;
+}
+
+@media (max-width: 600px) {
+  .context-menu {
+    min-width: 180px;
+    max-width: 250px;
+  }
+}
+
+/* Modal Styles for Delete Confirmation */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+body.dark-mode .modal {
+  background-color: rgba(0,0,0,0.7);
+}
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+body.dark-mode .modal-content {
+  background-color: #424242;
+  border-color: #666;
+  color: #fff;
+}
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close:hover {
+  color: #000;
+}
+body.dark-mode .close:hover {
+  color: #fff;
+}
+.modal h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  text-align: center;
+  color: #333;
+}
+body.dark-mode .modal h2 {
+  color: #fff;
+}
+.modal p {
+  margin: 15px 0;
+  font-size: 1rem;
+  text-align: center;
+  color: #333;
+}
+body.dark-mode .modal p {
+  color: #ddd;
+}
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 15px 0;
+  justify-content: center;
+}
+.checkbox-group input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+.checkbox-group label {
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #333;
+}
+body.dark-mode .checkbox-group label {
+  color: #ddd;
+}
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+.modal-buttons button:not(.delete-btn) {
+  background-color: #f0f0f0;
+}
+body.dark-mode .modal-buttons button:not(.delete-btn) {
+  background-color: #555;
+  color: #fff;
+}
+.modal-buttons button:not(.delete-btn):hover {
+  background-color: #e0e0e0;
+}
+body.dark-mode .modal-buttons button:not(.delete-btn):hover {
+  background-color: #666;
+}
+.modal-buttons button.delete-btn {
+  background-color: #dc3545;
+  color: #fff;
+}
+body.dark-mode .modal-buttons button.delete-btn {
+  background-color: #ff5555;
+}
+.modal-buttons button.delete-btn:hover {
+  background-color: #c82333;
+}
+body.dark-mode .modal-buttons button.delete-btn:hover {
+  background-color: #dd4444;
+}
+
+/* Preferences Modal Specific Styles */
+.preferences-group {
+  margin: 15px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.preferences-group label {
+  font-size: 0.9rem;
+  color: #333;
+}
+body.dark-mode .preferences-group label {
+  color: #ddd;
+}
+.preferences-group input[type="checkbox"] {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.preferences-group select {
+  padding: 6px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+}
+body.dark-mode .preferences-group select {
+  background-color: #333;
+  border-color: #666;
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .modal-content {
+    width: 90%;
+    margin: 30% auto;
+  }
+}
+
+/* Toolbar Buttons Styling */
+.toolbar {
+  margin-bottom: 0;
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background-color: #f5f5f5;
+  padding: 8px;
+  border-radius: 6px;
+}
+body.dark-mode .toolbar {
+  background-color: #333;
+}
+.toolbar button {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: relative;
+}
+body.dark-mode .toolbar button {
+  background-color: #444;
+  border-color: #666;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.toolbar button:hover {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.3);
+}
+body.dark-mode .toolbar button:hover {
+  background-color: #555;
+  border-color: #888;
+  box-shadow: 0 0 0 2px rgba(77,166,255,0.5);
+}
+.toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Tooltip */
+.toolbar button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+body.dark-mode .toolbar button::after {
+  background-color: #555;
+}
+.toolbar button:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+@media (max-width: 600px) {
+  .toolbar {
+    gap: 5px;
+  }
+  .toolbar button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Notepad Container */
+.notepad-container {
+  margin-top: 0;
+  padding-top: 0;
+}
+</style>
 </head>
 <body>
   <div class="header">
@@ -63,15 +489,15 @@
   </div>
   <div class="toolbar">
     <div class="tool-buttons">
-      <button onclick="cutText()" title="Cut"><i class="fas fa-cut"></i><span class="button-label">Cut</span></button>
-      <button onclick="copyText()" title="Copy"><i class="fas fa-copy"></i><span class="button-label">Copy</span></button>
-      <button onclick="pasteText()" title="Paste"><i class="fas fa-paste"></i><span class="button-label">Paste</span></button>
-      <button onclick="showReplacePopup()" title="Replace"><i class="fas fa-exchange-alt"></i><span class="button-label">Replace</span></button>
-      <button onclick="selectAllText()" title="Select All"><i class="fas fa-select"></i><span class="button-label">Select All</span></button>
-      <button onclick="deleteAllText()" title="Delete All"><i class="fas fa-trash-alt"></i><span class="button-label">Delete All</span></button>
-      <button onclick="printText()" title="Print"><i class="fas fa-print"></i><span class="button-label">Print</span></button>
+      <button onclick="cutText()" title="Cut" data-tooltip="Cut"><i class="fas fa-cut"></i><span class="button-label">Cut</span></button>
+      <button onclick="copyText()" title="Copy" data-tooltip="Copy"><i class="fas fa-copy"></i><span class="button-label">Copy</span></button>
+      <button onclick="pasteText()" title="Paste" data-tooltip="Paste"><i class="fas fa-paste"></i><span class="button-label">Paste</span></button>
+      <button onclick="showReplacePopup()" title="Replace" data-tooltip="Replace"><i class="fas fa-exchange-alt"></i><span class="button-label">Replace</span></button>
+      <button onclick="selectAllText()" title="Select All" data-tooltip="Select All"><i class="fas fa-select"></i><span class="button-label">Select All</span></button>
+      <button onclick="deleteAllText()" title="Delete All" data-tooltip="Delete All"><i class="fas fa-trash-alt"></i><span class="button-label">Delete All</span></button>
+      <button onclick="printText()" title="Print" data-tooltip="Print"><i class="fas fa-print"></i><span class="button-label">Print</span></button>
       <div class="dropdown">
-        <button onclick="toggleShareMenu()" class="dropbtn" title="Share"><i class="fas fa-share-alt"></i><span class="button-label">Share</span></button>
+        <button onclick="toggleShareMenu()" class="dropbtn" title="Share" data-tooltip="Share"><i class="fas fa-share-alt"></i><span class="button-label">Share</span></button>
         <div id="shareMenu" class="dropdown-content">
           <a href="#" onclick="shareText('facebook')"><i class="fab fa-facebook"></i> Facebook</a>
           <a href="#" onclick="shareText('email')"><i class="fas fa-envelope"></i> Email</a>
@@ -80,20 +506,37 @@
           <a href="#" onclick="shareText('linkedin')"><i class="fab fa-linkedin"></i> LinkedIn</a>
         </div>
       </div>
-      <button onclick="zoomIn()" title="Zoom In"><i class="fas fa-search-plus"></i><span class="button-label">Zoom In</span></button>
-      <button onclick="zoomOut()" title="Zoom Out"><i class="fas fa-search-minus"></i><span class="button-label">Zoom Out</span></button>
-      <button onclick="undoText()" title="Undo"><i class="fas fa-undo"></i><span class="button-label">Undo</span></button>
-      <button onclick="redoText()" title="Redo"><i class="fas fa-redo"></i><span class="button-label">Redo</span></button>
-      <button onclick="toggleDarkMode()" id="darkModeBtn" title="Dark Mode" class="dark-mode-btn"><i class="fas fa-adjust"></i><span class="button-label">Dark Mode</span></button>
-      <button onclick="showPreferences()" id="preferencesBtn" title="Preferences"><i class="fas fa-cog"></i><span class="button-label">Preferences</span></button>
+      <button onclick="zoomIn()" title="Zoom In" data-tooltip="Zoom In"><i class="fas fa-search-plus"></i><span class="button-label">Zoom In</span></button>
+      <button onclick="zoomOut()" title="Zoom Out" data-tooltip="Zoom Out"><i class="fas fa-search-minus"></i><span class="button-label">Zoom Out</span></button>
+      <button onclick="undoText()" title="Undo" data-tooltip="Undo"><i class="fas fa-undo"></i><span class="button-label">Undo</span></button>
+      <button onclick="redoText()" title="Redo" data-tooltip="Redo"><i class="fas fa-redo"></i><span class="button-label">Redo</span></button>
+      <button onclick="toggleDarkMode()" id="darkModeBtn" title="Dark Mode" class="dark-mode-btn" data-tooltip="Dark Mode"><i class="fas fa-adjust"></i><span class="button-label">Dark Mode</span></button>
+      <button onclick="showPreferences()" id="preferencesBtn" title="Preferences" data-tooltip="Preferences"><i class="fas fa-cog"></i><span class="button-label">Preferences</span></button>
     </div>
   </div>
-  <div class="notepad-container">
-    <textarea id="notepad" placeholder="Start typing..."></textarea>
+  <div class="notepad-container" style="display: flex; flex-direction: column; align-items: flex-start;">
+    <div id="pages" class="pages-section"></div>
+    <textarea id="notepad" placeholder="Start typing..." style="flex: 1;"></textarea>
   </div>
   <div class="footer">
-    <span>© Designed by BKPKVIDEO.com</span>
+    <span> Designed by BKPKVIDEO.com</span>
     <button id="scrollToTopBtn" onclick="scrollToTop()">Scroll to Top</button>
+  </div>
+
+  <div id="deletePageModal" class="modal">
+    <div class="modal-content delete-modal-content">
+      <span class="close" onclick="closeDeletePageModal()">&times;</span>
+      <h2>Confirm Deletion</h2>
+      <p>Are you sure you want to remove this page? All content on this page will be permanently deleted and cannot be recovered.</p>
+      <div class="checkbox-group">
+        <input type="checkbox" id="rememberPreference" value="true">
+        <label for="rememberPreference">Remember my preference</label>
+      </div>
+      <div class="modal-buttons">
+        <button onclick="closeDeletePageModal()">Cancel</button>
+        <button onclick="confirmDeletePage()" class="delete-btn">Delete</button>
+      </div>
+    </div>
   </div>
 
   <div id="preferencesModal" class="modal">
@@ -190,7 +633,16 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div id="renameContextMenu" class="context-menu">
+    <div class="context-menu-content">
+      <div class="rename-group">
+        <label for="contextPageNameInput">Rename Page:</label>
+        <input type="text" id="contextPageNameInput" maxlength="30">
+      </div>
+      <button onclick="saveContextPageName()" class="context-done-btn">Done</button>
+    </div>
+  </div>
 
+  <script src="script.js"></script>
 </body>
 </html>
