@@ -1,4 +1,314 @@
+// Page Tabs Management
 const notepad = document.getElementById('notepad');
+const pagesDiv = document.getElementById('pages');
+let pagesData = []; // Array to store page data {name: string, content: string}
+let currentPageIndex = 0;
+let renamingPageIndex = -1;
+let deletingPageIndex = -1;
+let skipDeleteConfirmation = false; // For remembering user preference
+
+const INITIAL_PAGES = 5;
+
+// Initialize pages
+function initPages() {
+  // Load from localStorage if available
+  const savedPages = localStorage.getItem('notepadPagesData');
+  if (savedPages) {
+    try {
+      const parsed = JSON.parse(savedPages);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        pagesData = parsed;
+        const savedPageIndex = parseInt(localStorage.getItem('notepadCurrentPage'), 10);
+        if (!isNaN(savedPageIndex) && savedPageIndex >= 0 && savedPageIndex < pagesData.length) {
+          currentPageIndex = savedPageIndex;
+        }
+      } else {
+        createDefaultPages();
+      }
+    } catch (e) {
+      console.error('Failed to load pages from storage', e);
+      createDefaultPages();
+    }
+  } else {
+    createDefaultPages();
+  }
+  // Load delete confirmation preference
+  const savedPreference = localStorage.getItem('skipDeleteConfirmation');
+  if (savedPreference === 'true') {
+    skipDeleteConfirmation = true;
+  }
+  renderPageTabs();
+  notepad.value = pagesData[currentPageIndex].content;
+}
+
+function createDefaultPages() {
+  pagesData = [];
+  for (let i = 0; i < INITIAL_PAGES; i++) {
+    pagesData.push({
+      name: `Page ${i + 1}`,
+      content: ''
+    });
+  }
+  currentPageIndex = 0;
+}
+
+// Render page tabs
+function renderPageTabs() {
+  if (!pagesDiv) return;
+  pagesDiv.innerHTML = '';
+  pagesData.forEach((page, index) => {
+    const btn = document.createElement('button');
+    btn.textContent = page.name;
+    btn.className = 'page-btn' + (index === currentPageIndex ? ' active' : '');
+    btn.onclick = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl+Click or Cmd+Click for rename
+        openRenameContextMenu(index, e);
+      } else {
+        switchPage(index);
+      }
+    };
+    // Context menu for rename on right-click
+    btn.oncontextmenu = (e) => {
+      e.preventDefault();
+      openRenameContextMenu(index, e);
+    };
+    // Double-click to rename
+    btn.ondblclick = (e) => {
+      e.preventDefault();
+      openRenameContextMenu(index, e);
+    };
+    // Add touch event for mobile long press
+    let touchTimeout;
+    btn.ontouchstart = (e) => {
+      e.preventDefault();
+      touchTimeout = setTimeout(() => {
+        openRenameContextMenu(index, e);
+      }, 800);
+    };
+    btn.ontouchend = (e) => {
+      e.preventDefault();
+      clearTimeout(touchTimeout);
+      // If it's a quick tap, treat as click
+      const duration = e.timeStamp - (e.changedTouches ? e.changedTouches[0].clientX : 0);
+      if (duration < 300) {
+        switchPage(index);
+      }
+    };
+    // Add close icon
+    const closeIcon = document.createElement('span');
+    closeIcon.textContent = '×';
+    closeIcon.className = 'close-icon';
+    closeIcon.onclick = (e) => {
+      e.stopPropagation();
+      openDeletePageModal(index);
+    };
+    btn.appendChild(closeIcon);
+    pagesDiv.appendChild(btn);
+  });
+  // Add the '+' button
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '+';
+  addBtn.className = 'page-add-btn';
+  addBtn.onclick = () => addNewPage();
+  pagesDiv.appendChild(addBtn);
+}
+
+// Switch to a different page
+function switchPage(index) {
+  if (index < 0 || index >= pagesData.length) return;
+  // Save current page content
+  pagesData[currentPageIndex].content = notepad.value;
+  // Switch to new page
+  currentPageIndex = index;
+  // Load new page content
+  notepad.value = pagesData[currentPageIndex].content;
+  // Update UI
+  renderPageTabs();
+  // Save to localStorage
+  savePagesData();
+}
+
+// Add a new page
+function addNewPage() {
+  const newPageNum = pagesData.length + 1;
+  pagesData.push({
+    name: `Page ${newPageNum}`,
+    content: ''
+  });
+  switchPage(pagesData.length - 1);
+}
+
+// Open rename context menu
+function openRenameContextMenu(index, event) {
+  renamingPageIndex = index;
+  const menu = document.getElementById('renameContextMenu');
+  const input = document.getElementById('contextPageNameInput');
+  input.value = pagesData[index].name;
+  
+  // Position the menu near the clicked tab
+  const rect = event.target.getBoundingClientRect();
+  const scrollX = window.scrollX || window.pageXOffset;
+  const scrollY = window.scrollY || window.pageYOffset;
+  menu.style.top = `${rect.bottom + scrollY + 5}px`;
+  menu.style.left = `${rect.left + scrollX}px`;
+  
+  // Ensure menu stays within viewport
+  const menuRect = menu.getBoundingClientRect();
+  if (menuRect.right > window.innerWidth) {
+    menu.style.left = `${window.innerWidth - menuRect.width - 5 + scrollX}px`;
+  }
+  if (menuRect.bottom > window.innerHeight) {
+    menu.style.top = `${rect.top + scrollY - menuRect.height - 5}px`;
+  }
+  
+  menu.style.display = 'block';
+  input.focus();
+  input.select();
+  
+  // Close on outside click
+  const closeOnClick = (e) => {
+    if (!menu.contains(e.target) && e.target !== event.target) {
+      closeRenameContextMenu();
+      document.removeEventListener('click', closeOnClick);
+    }
+  };
+  setTimeout(() => {
+    document.addEventListener('click', closeOnClick);
+  }, 100);
+}
+
+// Close rename context menu
+function closeRenameContextMenu() {
+  const menu = document.getElementById('renameContextMenu');
+  menu.style.display = 'none';
+  renamingPageIndex = -1;
+}
+
+// Save new page name from context menu
+function saveContextPageName() {
+  if (renamingPageIndex < 0 || renamingPageIndex >= pagesData.length) return;
+  const input = document.getElementById('contextPageNameInput');
+  const newName = input.value.trim();
+  if (newName === '') {
+    alert('Page name cannot be empty.');
+    return;
+  }
+  // Check for duplicate names
+  if (pagesData.some((page, idx) => idx !== renamingPageIndex && page.name === newName)) {
+    alert('A page with this name already exists. Please use a unique name.');
+    return;
+  }
+  pagesData[renamingPageIndex].name = newName;
+  renderPageTabs();
+  savePagesData();
+  closeRenameContextMenu();
+}
+
+// Allow Enter key to save the name
+window.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    const menu = document.getElementById('renameContextMenu');
+    if (menu.style.display === 'block') {
+      saveContextPageName();
+    }
+  }
+});
+
+// Open delete page confirmation modal
+function openDeletePageModal(index) {
+  if (pagesData.length <= 1) {
+    alert('You cannot delete the last page. At least one page must remain.');
+    return;
+  }
+  deletingPageIndex = index;
+  if (skipDeleteConfirmation) {
+    confirmDeletePage();
+    return;
+  }
+  const modal = document.getElementById('deletePageModal');
+  modal.style.display = 'block';
+}
+
+// Close delete page modal
+function closeDeletePageModal() {
+  const modal = document.getElementById('deletePageModal');
+  modal.style.display = 'none';
+  deletingPageIndex = -1;
+}
+
+// Confirm and delete page
+function confirmDeletePage() {
+  if (deletingPageIndex < 0 || deletingPageIndex >= pagesData.length) return;
+  if (pagesData.length <= 1) {
+    alert('You cannot delete the last page. At least one page must remain.');
+    closeDeletePageModal();
+    return;
+  }
+  // Check if user wants to skip confirmation in future
+  const rememberCheckbox = document.getElementById('rememberPreference');
+  if (rememberCheckbox.checked) {
+    skipDeleteConfirmation = true;
+    localStorage.setItem('skipDeleteConfirmation', 'true');
+  }
+  pagesData.splice(deletingPageIndex, 1);
+  // Adjust current page index
+  if (deletingPageIndex <= currentPageIndex && currentPageIndex > 0) {
+    currentPageIndex--;
+  }
+  // Update UI and content
+  notepad.value = pagesData[currentPageIndex].content;
+  renderPageTabs();
+  savePagesData();
+  closeDeletePageModal();
+}
+
+// Close modals when clicking outside
+window.addEventListener('click', function(event) {
+  const deleteModal = document.getElementById('deletePageModal');
+  if (event.target === deleteModal) {
+    closeDeletePageModal();
+  }
+  const downloadModal = document.getElementById('downloadModal');
+  const preferencesModal = document.getElementById('preferencesModal');
+  const replaceModal = document.getElementById('replaceModal');
+  if (event.target === downloadModal) {
+    closeDownloadPopup();
+  }
+  if (event.target === preferencesModal) {
+    closePreferences();
+  }
+  if (event.target === replaceModal) {
+    closeReplacePopup();
+  }
+});
+
+// Save pages data to localStorage
+function savePagesData() {
+  // Save current page content first
+  pagesData[currentPageIndex].content = notepad.value;
+  localStorage.setItem('notepadPagesData', JSON.stringify(pagesData));
+  localStorage.setItem('notepadCurrentPage', currentPageIndex);
+  // For backward compatibility, save current page content to old key
+  localStorage.setItem('notepadContent', notepad.value);
+}
+
+// Modify existing autoSave function to work with pages
+function autoSave() {
+  savePagesData();
+}
+
+// Save content on input
+notepad.addEventListener('input', function() {
+  pagesData[currentPageIndex].content = notepad.value;
+  if (document.getElementById('autoSaveToggle').checked) {
+    savePagesData();
+  }
+});
+
+// Initialize pages on load
+initPages();
+
 const body = document.body;
 const preferencesModal = document.getElementById('preferencesModal');
 const darkModeToggle = document.getElementById('darkModeBtn');
@@ -15,6 +325,10 @@ const scrollToTopBtn = document.getElementById('scrollToTopBtn');
 
 // Auto-save functionality
 function autoSave() {
+  // Save only the current page buffer
+  pagesData[currentPageIndex].content = notepad.value;
+  localStorage.setItem('notepadPagesData', JSON.stringify(pagesData));
+  // Optionally, keep old key for backward compatibility
   localStorage.setItem('notepadContent', notepad.value);
 }
 
@@ -371,3 +685,33 @@ function downloadFile() {
 
   closeDownloadPopup();
 }
+
+// Add tooltips to toolbar buttons
+document.addEventListener('DOMContentLoaded', function() {
+  const toolbarButtons = [
+    { id: 'cutBtn', tooltip: 'Cut Text' },
+    { id: 'copyBtn', tooltip: 'Copy Text' },
+    { id: 'pasteBtn', tooltip: 'Paste Text' },
+    { id: 'boldBtn', tooltip: 'Bold' },
+    { id: 'italicBtn', tooltip: 'Italic' },
+    { id: 'underlineBtn', tooltip: 'Underline' },
+    { id: 'strikeBtn', tooltip: 'Strikethrough' },
+    { id: 'quoteBtn', tooltip: 'Blockquote' },
+    { id: 'codeBtn', tooltip: 'Code Block' },
+    { id: 'bulletBtn', tooltip: 'Bulleted List' },
+    { id: 'numberBtn', tooltip: 'Numbered List' },
+    { id: 'linkBtn', tooltip: 'Insert Link' },
+    { id: 'clearBtn', tooltip: 'Clear Formatting' },
+    { id: 'undoBtn', tooltip: 'Undo' },
+    { id: 'redoBtn', tooltip: 'Redo' },
+    { id: 'downloadBtn', tooltip: 'Download' },
+    { id: 'preferencesBtn', tooltip: 'Preferences' },
+    { id: 'replaceBtn', tooltip: 'Replace Text' }
+  ];
+  toolbarButtons.forEach(btn => {
+    const element = document.getElementById(btn.id);
+    if (element) {
+      element.setAttribute('data-tooltip', btn.tooltip);
+    }
+  });
+});
