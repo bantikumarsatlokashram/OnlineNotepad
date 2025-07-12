@@ -1,719 +1,505 @@
-// Page Tabs Management
-const notepad = document.getElementById('notepad');
-const pagesDiv = document.getElementById('pages');
-let pagesData = []; // Array to store page data {name: string, content: string}
-let currentPageIndex = 0;
-let renamingPageIndex = -1;
-let deletingPageIndex = -1;
-let skipDeleteConfirmation = false; // For remembering user preference
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f0f0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
 
-const INITIAL_PAGES = 5;
+body.dark-mode {
+  background: #1e1e1e;
+  color: #d0d0d0;
+}
 
-// Initialize pages
-function initPages() {
-  // Load from localStorage if available
-  const savedPages = localStorage.getItem('notepadPagesData');
-  if (savedPages) {
-    try {
-      const parsed = JSON.parse(savedPages);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        pagesData = parsed;
-        const savedPageIndex = parseInt(localStorage.getItem('notepadCurrentPage'), 10);
-        if (!isNaN(savedPageIndex) && savedPageIndex >= 0 && savedPageIndex < pagesData.length) {
-          currentPageIndex = savedPageIndex;
-        }
-      } else {
-        createDefaultPages();
-      }
-    } catch (e) {
-      console.error('Failed to load pages from storage', e);
-      createDefaultPages();
-    }
-  } else {
-    createDefaultPages();
+.header {
+  background: #7456f1;
+  color: white;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.header .logo img {
+  height: 40px;
+  margin-right: 20px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.export-buttons {
+  margin-top: 0;
+  margin-right: 50px;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropbtn {
+  background: white;
+  border: none;
+  color: #7456f1;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dropbtn:hover {
+  background: #f0f0f0;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background: white;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  min-width: 160px;
+  animation: fadeIn 0.3s;
+}
+
+.dropdown-content a {
+  color: #7456f1;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown-content a:hover {
+  background: #f0f0f0;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.iso-icons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0;} 
+  to {opacity: 1;}
+}
+
+.toolbar {
+  background: #7456f1;
+  color: white;
+  padding: 8px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.toolbar .tool-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center; /* Center buttons horizontally */
+}
+
+.toolbar button {
+  background: white;
+  border: none;
+  color: #7456f1;
+  padding: 8px 16px;
+  margin: 5px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Added space between button and name */
+}
+
+.toolbar button[title] {
+  padding: 8px;
+  font-size: 16px;
+  margin: 5px;
+  gap: 0;
+}
+
+.toolbar button:hover {
+  background: #f0f0f0;
+}
+
+.toolbar .button-label {
+  display: inline;
+}
+
+#darkModeBtn {
+  background-color: black;
+  color: white;
+}
+
+body.dark-mode #darkModeBtn {
+  background-color: white;
+  color: black;
+}
+
+.notepad-container {
+  flex: 1;
+  padding: 16px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 160px); /* Adjust height to fit the viewport */
+}
+
+.notepad-container textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  outline: none;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 8px;
+  background: repeating-linear-gradient(
+    #fff,
+    #fff 29px,
+    #ddd 30px
+  );
+  transition: background 0.3s, color 0.3s, line-height 0.3s;
+  white-space: pre-wrap; /* Enable line wrapping */
+  overflow-wrap: break-word; /* Break words to avoid overflow */
+  border-radius: 8px; /* Adding some radius to the textarea */
+}
+
+.notepad-container textarea.dark-mode {
+  background: repeating-linear-gradient(
+    #2e2e2e,
+    #2e2e2e 29px,
+    #555 30px
+  );
+  color: #d0d0d0;
+}
+
+/* Preferences Modal */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 1000; 
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; 
+  background-color: rgba(0,0,0,0.5); 
+  animation: fadeIn 0.3s;
+}
+
+.modal-content {
+  background-color: #7456f1;
+  margin: 15% auto; 
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 500px;
+  color: white;
+  animation: slideIn 0.5s;
+}
+
+.modal-content h2 {
+  text-align: center;
+}
+
+.modal-content .preferences-group, .modal-content .download-group, .modal-content .replace-group {
+  margin: 10px 0;
+}
+
+.modal-content .preferences-group label, .modal-content .download-group label, .modal-content .replace-group label {
+  display: block;
+  margin: 5px 0;
+}
+
+.modal-content .preferences-group select, .modal-content .download-group select, .modal-content .download-group input, .modal-content .replace-group input {
+  width: 100%;
+  padding: 5px;
+  margin: 5px 0;
+}
+
+.modal-content .close {
+  color: white;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.modal-content .close:hover,
+.modal-content .close:focus {
+  color: #ddd;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-content button {
+  background: white;
+  color: #7456f1;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.modal-content button:hover {
+  background: #f0f0f0;
+}
+
+.replace-modal-content {
+  background-color: #7456f1;
+  color: white;
+}
+
+/* Animated Select */
+.animated-select {
+  appearance: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  color: #7456f1;
+  padding: 10px;
+  font-size: 16px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.animated-select:hover {
+  border-color: #7456f1;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from {opacity: 0;} 
+  to {opacity: 1;}
+}
+
+@keyframes slideIn {
+  from {top: -50px; opacity: 0;}
+  to {top: 0; opacity: 1;}
+}
+
+/* Page Tabs Styling */
+.pages-section {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  margin-bottom: 10px;
+  margin-top: 0;
+  align-items: center;
+  width: 100%;
+  overflow-x: auto;
+  background-color: #f5f5f5;
+  padding: 5px;
+}
+body.dark-mode .pages-section {
+  background-color: #333;
+}
+.page-btn {
+  padding: 6px 24px 6px 12px;
+  border: 1px solid #aaa;
+  background: #e0e0e0;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  outline: none;
+  font-size: 0.9rem;
+  margin: 0;
+  min-width: 80px;
+  max-width: 150px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+body.dark-mode .page-btn {
+  background: #444;
+  border-color: #666;
+  color: #fff;
+}
+.page-btn.active {
+  background: #007bff;
+  color: #fff;
+  font-weight: bold;
+  border-color: #007bff;
+  border-bottom-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+body.dark-mode .page-btn.active {
+  background: #4da6ff;
+  border-color: #4da6ff;
+}
+.page-btn .close-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.page-btn .close-icon:hover {
+  color: #ff0000;
+}
+body.dark-mode .page-btn .close-icon {
+  color: #aaa;
+}
+body.dark-mode .page-btn .close-icon:hover {
+  color: #ff5555;
+}
+.page-add-btn {
+  padding: 6px 10px;
+  border: 1px solid #aaa;
+  background: #e0e0e0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  outline: none;
+  font-size: 0.9rem;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.dark-mode .page-add-btn {
+  background: #444;
+  border-color: #666;
+  color: #fff;
+}
+.page-add-btn:hover {
+  background: #d0d0d0;
+}
+body.dark-mode .page-add-btn:hover {
+  background: #555;
+}
+
+/* Footer */
+.footer {
+  background: #7456f1;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#scrollToTopBtn {
+  display: none;
+  background: white;
+  color: #7456f1;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+  position: fixed;
+  bottom: 60px;
+  right: 30px;
+}
+
+#scrollToTopBtn:hover {
+  background: #f0f0f0;
+}
+
+@media (max-width: 600px) {
+  .header h1 {
+    font-size: 20px;
   }
-  // Load delete confirmation preference
-  const savedPreference = localStorage.getItem('skipDeleteConfirmation');
-  if (savedPreference === 'true') {
-    skipDeleteConfirmation = true;
+
+  .header button, .toolbar button {
+    padding: 8px 12px;
+    font-size: 14px;
   }
-  renderPageTabs();
-  notepad.value = pagesData[currentPageIndex].content;
-}
 
-function createDefaultPages() {
-  pagesData = [];
-  for (let i = 0; i < INITIAL_PAGES; i++) {
-    pagesData.push({
-      name: `Page ${i + 1}`,
-      content: ''
-    });
+  .notepad-container textarea {
+    height: calc(100vh - 200px); /* Adjust height to fit the viewport */
   }
-  currentPageIndex = 0;
-}
-
-// Render page tabs
-function renderPageTabs() {
-  if (!pagesDiv) return;
-  pagesDiv.innerHTML = '';
-  pagesData.forEach((page, index) => {
-    const btn = document.createElement('button');
-    btn.textContent = page.name;
-    btn.className = 'page-btn' + (index === currentPageIndex ? ' active' : '');
-    btn.onclick = (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        // Ctrl+Click or Cmd+Click for rename
-        openRenameContextMenu(index, e);
-      } else {
-        switchPage(index);
-      }
-    };
-    // Context menu for rename on right-click
-    btn.oncontextmenu = (e) => {
-      e.preventDefault();
-      openRenameContextMenu(index, e);
-    };
-    // Double-click to rename
-    btn.ondblclick = (e) => {
-      e.preventDefault();
-      openRenameContextMenu(index, e);
-    };
-    // Add touch event for mobile long press
-    let touchTimeout;
-    btn.ontouchstart = (e) => {
-      e.preventDefault();
-      touchTimeout = setTimeout(() => {
-        openRenameContextMenu(index, e);
-      }, 800);
-    };
-    btn.ontouchend = (e) => {
-      e.preventDefault();
-      clearTimeout(touchTimeout);
-      // If it's a quick tap, treat as click
-      const duration = e.timeStamp - (e.changedTouches ? e.changedTouches[0].clientX : 0);
-      if (duration < 300) {
-        switchPage(index);
-      }
-    };
-    // Add close icon
-    const closeIcon = document.createElement('span');
-    closeIcon.textContent = '×';
-    closeIcon.className = 'close-icon';
-    closeIcon.onclick = (e) => {
-      e.stopPropagation();
-      openDeletePageModal(index);
-    };
-    btn.appendChild(closeIcon);
-    pagesDiv.appendChild(btn);
-  });
-  // Add the '+' button
-  const addBtn = document.createElement('button');
-  addBtn.textContent = '+';
-  addBtn.className = 'page-add-btn';
-  addBtn.onclick = () => addNewPage();
-  pagesDiv.appendChild(addBtn);
-}
-
-// Switch to a different page
-function switchPage(index) {
-  if (index < 0 || index >= pagesData.length) return;
-  // Save current page content
-  pagesData[currentPageIndex].content = notepad.value;
-  // Switch to new page
-  currentPageIndex = index;
-  // Load new page content
-  notepad.value = pagesData[currentPageIndex].content;
-  // Update UI
-  renderPageTabs();
-  // Save to localStorage
-  savePagesData();
-}
-
-// Add a new page
-function addNewPage() {
-  const newPageNum = pagesData.length + 1;
-  pagesData.push({
-    name: `Page ${newPageNum}`,
-    content: ''
-  });
-  switchPage(pagesData.length - 1);
-}
-
-// Open rename context menu
-function openRenameContextMenu(index, event) {
-  renamingPageIndex = index;
-  const menu = document.getElementById('renameContextMenu');
-  const input = document.getElementById('contextPageNameInput');
-  input.value = pagesData[index].name;
   
-  // Position the menu near the clicked tab
-  const rect = event.target.getBoundingClientRect();
-  const scrollX = window.scrollX || window.pageXOffset;
-  const scrollY = window.scrollY || window.pageYOffset;
-  menu.style.top = `${rect.bottom + scrollY + 5}px`;
-  menu.style.left = `${rect.left + scrollX}px`;
-  
-  // Ensure menu stays within viewport
-  const menuRect = menu.getBoundingClientRect();
-  if (menuRect.right > window.innerWidth) {
-    menu.style.left = `${window.innerWidth - menuRect.width - 5 + scrollX}px`;
-  }
-  if (menuRect.bottom > window.innerHeight) {
-    menu.style.top = `${rect.top + scrollY - menuRect.height - 5}px`;
-  }
-  
-  menu.style.display = 'block';
-  input.focus();
-  input.select();
-  
-  // Close on outside click
-  const closeOnClick = (e) => {
-    if (!menu.contains(e.target) && e.target !== event.target) {
-      closeRenameContextMenu();
-      document.removeEventListener('click', closeOnClick);
-    }
-  };
-  setTimeout(() => {
-    document.addEventListener('click', closeOnClick);
-  }, 100);
-}
-
-// Close rename context menu
-function closeRenameContextMenu() {
-  const menu = document.getElementById('renameContextMenu');
-  menu.style.display = 'none';
-  renamingPageIndex = -1;
-}
-
-// Save new page name from context menu
-function saveContextPageName() {
-  if (renamingPageIndex < 0 || renamingPageIndex >= pagesData.length) return;
-  const input = document.getElementById('contextPageNameInput');
-  const newName = input.value.trim();
-  if (newName === '') {
-    alert('Page name cannot be empty.');
-    return;
-  }
-  // Check for duplicate names
-  if (pagesData.some((page, idx) => idx !== renamingPageIndex && page.name === newName)) {
-    alert('A page with this name already exists. Please use a unique name.');
-    return;
-  }
-  pagesData[renamingPageIndex].name = newName;
-  renderPageTabs();
-  savePagesData();
-  closeRenameContextMenu();
-}
-
-// Allow Enter key to save the name
-window.addEventListener('keydown', function(event) {
-  if (event.key === 'Enter') {
-    const menu = document.getElementById('renameContextMenu');
-    if (menu.style.display === 'block') {
-      saveContextPageName();
-    }
-  }
-});
-
-// Open delete page confirmation modal
-function openDeletePageModal(index) {
-  if (pagesData.length <= 1) {
-    alert('You cannot delete the last page. At least one page must remain.');
-    return;
-  }
-  deletingPageIndex = index;
-  if (skipDeleteConfirmation) {
-    confirmDeletePage();
-    return;
-  }
-  const modal = document.getElementById('deletePageModal');
-  modal.style.display = 'block';
-}
-
-// Close delete page modal
-function closeDeletePageModal() {
-  const modal = document.getElementById('deletePageModal');
-  modal.style.display = 'none';
-  deletingPageIndex = -1;
-}
-
-// Confirm and delete page
-function confirmDeletePage() {
-  if (deletingPageIndex < 0 || deletingPageIndex >= pagesData.length) return;
-  if (pagesData.length <= 1) {
-    alert('You cannot delete the last page. At least one page must remain.');
-    closeDeletePageModal();
-    return;
-  }
-  // Check if user wants to skip confirmation in future
-  const rememberCheckbox = document.getElementById('rememberPreference');
-  if (rememberCheckbox.checked) {
-    skipDeleteConfirmation = true;
-    localStorage.setItem('skipDeleteConfirmation', 'true');
-  }
-  pagesData.splice(deletingPageIndex, 1);
-  // Adjust current page index
-  if (deletingPageIndex <= currentPageIndex && currentPageIndex > 0) {
-    currentPageIndex--;
-  }
-  // Update UI and content
-  notepad.value = pagesData[currentPageIndex].content;
-  renderPageTabs();
-  savePagesData();
-  closeDeletePageModal();
-}
-
-// Close modals when clicking outside
-window.addEventListener('click', function(event) {
-  const deleteModal = document.getElementById('deletePageModal');
-  if (event.target === deleteModal) {
-    closeDeletePageModal();
-  }
-  const downloadModal = document.getElementById('downloadModal');
-  const preferencesModal = document.getElementById('preferencesModal');
-  const replaceModal = document.getElementById('replaceModal');
-  if (event.target === downloadModal) {
-    closeDownloadPopup();
-  }
-  if (event.target === preferencesModal) {
-    closePreferences();
-  }
-  if (event.target === replaceModal) {
-    closeReplacePopup();
-  }
-});
-
-// Save pages data to localStorage
-function savePagesData() {
-  // Save current page content first
-  pagesData[currentPageIndex].content = notepad.value;
-  localStorage.setItem('notepadPagesData', JSON.stringify(pagesData));
-  localStorage.setItem('notepadCurrentPage', currentPageIndex);
-  // For backward compatibility, save current page content to old key
-  localStorage.setItem('notepadContent', notepad.value);
-}
-
-// Modify existing autoSave function to work with pages
-function autoSave() {
-  savePagesData();
-}
-
-// Save content on input
-notepad.addEventListener('input', function() {
-  pagesData[currentPageIndex].content = notepad.value;
-  if (document.getElementById('autoSaveToggle').checked) {
-    savePagesData();
-  }
-});
-
-// Initialize pages on load
-document.addEventListener('DOMContentLoaded', function() {
-  initPages();
-});
-
-const body = document.body;
-const preferencesModal = document.getElementById('preferencesModal');
-const darkModeToggle = document.getElementById('darkModeBtn');
-const textLinesToggle = document.getElementById('textLinesToggle');
-const autoSaveToggle = document.getElementById('autoSaveToggle');
-const fontSizeSelect = document.getElementById('fontSizeSelect');
-const fontFamilySelect = document.getElementById('fontFamilySelect');
-const fontWeightSelect = document.getElementById('fontWeightSelect');
-const downloadModal = document.getElementById('downloadModal');
-const fileNameInput = document.getElementById('fileName');
-const fileFormatSelect = document.getElementById('fileFormat');
-const replaceModal = document.getElementById('replaceModal');
-const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-
-// Auto-save functionality
-function autoSave() {
-  // Save only the current page buffer
-  pagesData[currentPageIndex].content = notepad.value;
-  localStorage.setItem('notepadPagesData', JSON.stringify(pagesData));
-  // Optionally, keep old key for backward compatibility
-  localStorage.setItem('notepadContent', notepad.value);
-}
-
-// Load saved content and preferences from local storage on page load
-window.onload = function() {
-  if (localStorage.getItem('notepadContent')) {
-    notepad.value = localStorage.getItem('notepadContent');
-  }
-  if (localStorage.getItem('darkMode') === 'enabled') {
-    body.classList.add('dark-mode');
-    notepad.classList.add('dark-mode');
-    darkModeToggle.innerHTML = '<i class="fas fa-adjust"></i> Light Mode';
-    darkModeToggle.style.backgroundColor = 'white';
-    darkModeToggle.style.color = 'black';
-  }
-  if (localStorage.getItem('textLines') === 'hidden') {
-    notepad.classList.add('no-lines');
-    textLinesToggle.checked = false;
-  } else {
-    textLinesToggle.checked = true;
-  }
-  if (localStorage.getItem('autoSave') === 'enabled' || autoSaveToggle.checked) {
-    autoSaveToggle.checked = true;
-    notepad.addEventListener('input', autoSave);
-  }
-  if (localStorage.getItem('fontSize')) {
-    notepad.style.fontSize = localStorage.getItem('fontSize');
-    notepad.style.lineHeight = parseInt(localStorage.getItem('fontSize')) * 1.5 + 'px';
-    fontSizeSelect.value = localStorage.getItem('fontSize');
-  }
-  if (localStorage.getItem('fontFamily')) {
-    notepad.style.fontFamily = localStorage.getItem('fontFamily');
-    fontFamilySelect.value = localStorage.getItem('fontFamily');
-  }
-  if (localStorage.getItem('fontWeight')) {
-    notepad.style.fontWeight = localStorage.getItem('fontWeight');
-    fontWeightSelect.value = localStorage.getItem('fontWeight');
-  }
-};
-
-// Scroll to top functionality
-window.onscroll = function() {
-  if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-    scrollToTopBtn.style.display = "block";
-  } else {
-    scrollToTopBtn.style.display = "none";
-  }
-};
-
-function scrollToTop() {
-  document.body.scrollTop = 0;
-  document.documentElement.scrollTop = 0;
-}
-
-// Event listeners for auto-save
-if (autoSaveToggle.checked) {
-  notepad.addEventListener('input', autoSave);
-} else {
-  notepad.removeEventListener('input', autoSave);
-}
-
-// Cut, copy, paste, and replace functionality
-notepad.addEventListener('cut', autoSave);
-notepad.addEventListener('copy', autoSave);
-notepad.addEventListener('paste', autoSave);
-
-// Show preferences modal
-function showPreferences() {
-  preferencesModal.style.display = 'block';
-}
-
-// Close preferences modal
-function closePreferences() {
-  preferencesModal.style.display = 'none';
-}
-
-// Dark mode toggle
-darkModeToggle.addEventListener('click', function() {
-  body.classList.toggle('dark-mode');
-  notepad.classList.toggle('dark-mode');
-  if (body.classList.contains('dark-mode')) {
-    localStorage.setItem('darkMode', 'enabled');
-    darkModeToggle.innerHTML = '<i class="fas fa-adjust"></i> Light Mode';
-    darkModeToggle.style.backgroundColor = 'white';
-    darkModeToggle.style.color = 'black';
-  } else {
-    localStorage.removeItem('darkMode');
-    darkModeToggle.innerHTML = '<i class="fas fa-adjust"></i> Dark Mode';
-    darkModeToggle.style.backgroundColor = 'black';
-    darkModeToggle.style.color = 'white';
-  }
-});
-
-// Text lines toggle
-textLinesToggle.addEventListener('change', function() {
-  notepad.classList.toggle('no-lines');
-  if (textLinesToggle.checked) {
-    localStorage.removeItem('textLines');
-  } else {
-    localStorage.setItem('textLines', 'hidden');
-  }
-});
-
-// Auto save toggle
-autoSaveToggle.addEventListener('change', function() {
-  if (autoSaveToggle.checked) {
-    localStorage.setItem('autoSave', 'enabled');
-    notepad.addEventListener('input', autoSave);
-  } else {
-    localStorage.removeItem('autoSave');
-    notepad.removeEventListener('input', autoSave);
-  }
-});
-
-// Font size change
-fontSizeSelect.addEventListener('change', function() {
-  notepad.style.fontSize = fontSizeSelect.value;
-  notepad.style.lineHeight = parseInt(fontSizeSelect.value) * 1.5 + 'px';
-  localStorage.setItem('fontSize', fontSizeSelect.value);
-});
-
-// Font family change
-fontFamilySelect.addEventListener('change', function() {
-  notepad.style.fontFamily = fontFamilySelect.value;
-  localStorage.setItem('fontFamily', fontFamilySelect.value);
-});
-
-// Font weight change
-fontWeightSelect.addEventListener('change', function() {
-  notepad.style.fontWeight = fontWeightSelect.value;
-  localStorage.setItem('fontWeight', fontWeightSelect.value);
-});
-
-// Cut text function
-function cutText() {
-  document.execCommand('cut');
-  autoSave();
-}
-
-// Copy text function
-function copyText() {
-  document.execCommand('copy');
-}
-
-// Paste text function
-function pasteText() {
-  navigator.clipboard.readText().then(text => {
-    const start = notepad.selectionStart;
-    const end = notepad.selectionEnd;
-    notepad.value = notepad.value.substring(0, start) + text + notepad.value.substring(end);
-    notepad.selectionStart = notepad.selectionEnd = start + text.length;
-    autoSave();
-  });
-}
-
-// Show replace popup
-function showReplacePopup() {
-  replaceModal.style.display = 'block';
-}
-
-// Close replace popup
-function closeReplacePopup() {
-  replaceModal.style.display = 'none';
-}
-
-// Replace text function
-function replaceText() {
-  const replaceText = document.getElementById('replaceText').value;
-  const start = notepad.selectionStart;
-  const end = notepad.selectionEnd;
-  notepad.value = notepad.value.substring(0, start) + replaceText + notepad.value.substring(end);
-  notepad.selectionStart = notepad.selectionEnd = start + replaceText.length;
-  autoSave();
-  closeReplacePopup();
-}
-
-// Select all text function
-function selectAllText() {
-  notepad.select();
-}
-
-// Delete all text function
-function deleteAllText() {
-  notepad.value = '';
-  autoSave();
-}
-
-// Print text function
-function printText() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const margin = 10;
-  const pageHeight = doc.internal.pageSize.height;
-  const textLines = doc.splitTextToSize(notepad.value, doc.internal.pageSize.width - margin * 2);
-
-  let y = margin;
-  textLines.forEach(line => {
-    if (y + 10 > pageHeight - margin) { // Check if we need to add a new page
-      doc.addPage();
-      y = margin;
-    }
-    doc.text(line, margin, y);
-    y += 10;
-  });
-
-  doc.text(margin, pageHeight - margin, "This File was created on online notepad by bkpkvideo.com", {
-    fontSize: 8,
-    color: 'rgba(0, 0, 0, 0.5)',
-  });
-
-  doc.output('dataurlnewwindow');
-}
-
-// Toggle share menu
-function toggleShareMenu() {
-  const shareMenu = document.getElementById('shareMenu');
-  shareMenu.classList.toggle('show');
-}
-
-// Share text function
-function shareText(platform) {
-  let shareUrl;
-  const text = encodeURIComponent(notepad.value);
-  const url = encodeURIComponent(window.location.href);
-
-  switch (platform) {
-    case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
-      break;
-    case 'email':
-      shareUrl = `mailto:?subject=Online Notepad&body=${text}`;
-      break;
-    case 'whatsapp':
-      shareUrl = `https://api.whatsapp.com/send?text=${text}`;
-      break;
-    case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-      break;
-    case 'linkedin':
-      shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}&title=Online Notepad&summary=${text}`;
-      break;
+  .header, .toolbar {
+    flex-direction: column;
+    position: static; /* Remove sticky positioning for mobile devices */
   }
 
-  window.open(shareUrl, '_blank');
-}
-
-// Zoom in function
-function zoomIn() {
-  const currentFontSize = parseFloat(window.getComputedStyle(notepad, null).getPropertyValue('font-size'));
-  notepad.style.fontSize = (currentFontSize + 2) + 'px';
-  notepad.style.lineHeight = (currentFontSize + 2) * 1.5 + 'px';
-}
-
-function zoomOut() {
-  const currentFontSize = parseFloat(window.getComputedStyle(notepad, null).getPropertyValue('font-size'));
-  if (currentFontSize > 8) {
-    notepad.style.fontSize = (currentFontSize - 2) + 'px';
-    notepad.style.lineHeight = (currentFontSize - 2) * 1.5 + 'px';
-  }
-}
-
-// Undo function
-function undoText() {
-  document.execCommand('undo');
-}
-
-// Redo function
-function redoText() {
-  document.execCommand('redo');
-}
-
-// Show download popup
-function showDownloadPopup(format) {
-  fileFormatSelect.value = format;
-  downloadModal.style.display = 'block';
-}
-
-// Close download popup
-function closeDownloadPopup() {
-  downloadModal.style.display = 'none';
-}
-
-// Download file function
-function downloadFile() {
-  const fileName = fileNameInput.value;
-  const fileFormat = fileFormatSelect.value;
-  const content = notepad.value;
-
-  let blob;
-  let mimeType;
-
-  switch (fileFormat) {
-    case 'text':
-      mimeType = 'text/plain';
-      blob = new Blob([content], { type: mimeType });
-      break;
-    case 'pdf':
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const margin = 10;
-      const pageHeight = doc.internal.pageSize.height;
-      const textLines = doc.splitTextToSize(content, doc.internal.pageSize.width - margin * 2);
-
-      let y = margin;
-      textLines.forEach(line => {
-        if (y + 10 > pageHeight - margin) { // Check if we need to add a new page
-          doc.addPage();
-          y = margin;
-        }
-        doc.text(line, margin, y);
-        y += 10;
-      });
-
-      doc.text(margin, pageHeight - margin, "This File was created on online notepad by bkpkvideo.com", {
-        fontSize: 8,
-        color: 'rgba(0, 0, 0, 0.5)',
-      });
-
-      doc.save(`${fileName}.pdf`);
-      return;
-    case 'css':
-      mimeType = 'text/css';
-      blob = new Blob([content], { type: mimeType });
-      break;
-    case 'html':
-      mimeType = 'text/html';
-      blob = new Blob([content], { type: mimeType });
-      break;
-    case 'javascript':
-      mimeType = 'application/javascript';
-      blob = new Blob([content], { type: mimeType });
-      break;
-    case 'php':
-      mimeType = 'application/x-httpd-php';
-      blob = new Blob([content], { type: mimeType });
-      break;
-    case 'word':
-      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      const link = document.createElement('a');
-      link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${btoa(content)}`;
-      link.download = `${fileName}.docx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return;
+  .header .logo {
+    margin-bottom: 10px;
   }
 
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${fileName}.${fileFormat}`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  .header h1 {
+    order: -1;
+  }
 
-  closeDownloadPopup();
+  .toolbar {
+    justify-content: space-between;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .sidebar.active {
+    display: flex;
+  }
+
+  .notepad-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .toolbar .tool-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .toolbar button {
+    padding: 10px;
+  }
+
+  .toolbar .button-label {
+    display: none;
+  }
+
+  .toolbar button[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    background: black;
+    color: white;
+    padding: 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
 }
-
-// Add tooltips to toolbar buttons
-document.addEventListener('DOMContentLoaded', function() {
-  const toolbarButtons = [
-    { id: 'cutBtn', tooltip: 'Cut Text' },
-    { id: 'copyBtn', tooltip: 'Copy Text' },
-    { id: 'pasteBtn', tooltip: 'Paste Text' },
-    { id: 'boldBtn', tooltip: 'Bold' },
-    { id: 'italicBtn', tooltip: 'Italic' },
-    { id: 'underlineBtn', tooltip: 'Underline' },
-    { id: 'strikeBtn', tooltip: 'Strikethrough' },
-    { id: 'quoteBtn', tooltip: 'Blockquote' },
-    { id: 'codeBtn', tooltip: 'Code Block' },
-    { id: 'bulletBtn', tooltip: 'Bulleted List' },
-    { id: 'numberBtn', tooltip: 'Numbered List' },
-    { id: 'linkBtn', tooltip: 'Insert Link' },
-    { id: 'clearBtn', tooltip: 'Clear Formatting' },
-    { id: 'undoBtn', tooltip: 'Undo' },
-    { id: 'redoBtn', tooltip: 'Redo' },
-    { id: 'downloadBtn', tooltip: 'Download' },
-    { id: 'preferencesBtn', tooltip: 'Preferences' },
-    { id: 'replaceBtn', tooltip: 'Replace Text' }
-  ];
-  toolbarButtons.forEach(btn => {
-    const element = document.getElementById(btn.id);
-    if (element) {
-      element.setAttribute('data-tooltip', btn.tooltip);
-    }
-  });
-});
